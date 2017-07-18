@@ -1,0 +1,326 @@
+/******************/
+
+STACKOVERFLOW
+
+/*****************/
+
+
+
+
+create table Comments(id int, userid int)
+row format delimited
+fields terminated by ',' ;
+
+load data local inpath '/Users/poojashantharaja/Documents/Hadoop/Documents/Projects/StackOverflowDataset/comments.csv' into table Comments;
+
+create table Posts(post_id int, posttype int, creationdate string, score int, view_count int, owneruserid int, title string, answercount int, commentcount int)
+row format delimited
+fields terminated by ',' ;
+
+load data local inpath '/Users/poojashantharaja/Documents/Hadoop/Documents/Projects/StackOverflowDataset/posts.csv' into table Posts;
+
+create table PostTypes(posttype_id int, name string)
+row format delimited 
+fields terminated by ',' ;
+
+load data local inpath '/Users/poojashantharaja/Documents/Hadoop/Documents/Projects/StackOverflowDataset/posttypes.csv' into table PostTypes;
+
+create table Users(users_id int, reputation int, displayname string, location string, age int)
+row format delimited
+fields terminated by ',' ;
+
+load data local inpath '/Users/poojashantharaja/Documents/Hadoop/Documents/Projects/StackOverflowDataset/users.csv' into table Users ;
+
+
+
+1)  
+SELECT maxreputation, displayname, cnt
+FROM
+(SELECT MAX(a.reputation) as maxreputation, a.displayname as displayname, a.users_id as users_id
+FROM Users a
+GROUP BY a.displayname, a.users_id ) f
+INNER JOIN 
+(SELECT COUNT(*) as cnt, b.owneruserid as owneruserid
+FROM Posts b
+GROUP BY b.owneruserid ) g
+
+ON f.users_id = g.owneruserid
+
+ORDER BY maxreputation DESC LIMIT 10;
+
+/** OUTPUT**/
+
+736381	Jon Skeet	1
+558878	Darin Dimitrov	4
+511429	Marc Gravell	3
+509174	Hans Passant	1
+453245	VonC	12
+420647	SLaks	12
+386251	Greg Hewgill	127
+371082	paxdiablo	3
+355764	Alex Martelli	9
+353596	JaredPar	 2
+
+/********************************/
+
+2) SELECT AVG(age) FROM Users ;
+
+/** OUTPUT**/
+
+35.263352397712275
+
+/********************************/
+
+3)
+SELECT UNIX_TIMESTAMP(a.creationdate) as seconds, b.displayname as displayname
+FROM Posts a, Users b
+WHERE a.owneruserid = b.users_id
+ORDER by seconds DESC LIMIT 10;
+
+/** OUTPUT**/
+
+1263992650	teerapap
+1263992592	Srinivasan
+1263992574	Mason Wheeler
+1263992553	Dave Barker
+1263992521	sth
+1263992366	Brandon
+1263992344	Toby Hede
+1263992342	rlbond
+1263992315	Thilo
+1263992269	Roman Nurik
+
+
+/********************************/
+
+
+4)SELECT f.displayname, f.maximum, g.cnt
+FROM
+(SELECT MAX(a.reputation) as maximum, a.displayname as displayname, a.users_id as users_id
+fROM Users a
+GROUP BY a.users_id, a.displayname ORDER BY maximum DESC) f
+JOIN
+(SELECT count(*) as cnt, b.userid as userid
+ FROM Comments b
+ GROUP BY b.userid) g
+ON (f.users_id = g.userid)
+ORDER BY maximum DESC LIMIT 10; 
+
+
+/** OUTPUT**/
+
+Jon Skeet	736381	765
+Darin Dimitrov	558878	353
+Marc Gravell	511429	407
+Hans Passant	509174	491
+VonC	453245	159
+CommonsWare	430484	277
+SLaks	420647	175
+Greg Hewgill	386251	162
+paxdiablo	371082	103
+Quentin	353740	292
+
+/********************************/
+
+5) SELECT displayname, cnt
+FROM
+(SELECT COUNT(*) as cnt , a.owneruserid as owneruserid
+FROM Posts a
+GROUP BY a.owneruserid
+ORDER BY cnt DESC) f
+JOIN
+(SELECT b.displayname, b.users_id as users_id 
+FROM Users b ) g
+ON f.owneruserid=g.users_id
+ORDER BY cnt DESC LIMIT 10;
+
+/** OUTPUT**/
+
+aku	274
+Joel Coehoorn	250
+FlySwat	220
+Keith	216
+Konrad Rudolph	211
+Jon Limjap	205
+Orion Edwards	202
+GateKiller	197
+Mike Stone	195
+Espo	187
+
+/********************************/
+
+6)
+SELECT displayname, cnt
+FROM
+(SELECT count(*) as cnt, a.userid as userid
+FROM Comments a
+GROUP BY a.userid ORDER BY cnt DESC ) f
+JOIN
+(SELECT b.users_id as users_id, b.displayname as displayname
+FROM Users b) g
+ON (f.userid=g.users_id)
+ORDER BY cnt DESC LIMIT 10;
+
+/** OUTPUT**/
+
+Jon Skeet	765
+Peter Lawrey	757
+Marc B	544
+Hans Passant	491
+Fionnuala	426
+Marc Gravell	407
+Oded	383
+Ignacio Vazquez-Abrams	369
+Darin Dimitrov	353
+Martijn Pieters	349
+
+
+/********************************/
+
+7) 
+SELECT displayname, userid, maxcount
+FROM
+(SELECT MAX(a.view_count) as maxcount, a.owneruserid as userid 
+FROM Posts a
+GROUP BY a.owneruserid ORDER BY maxcount DESC) f
+JOIN
+(SELECT b.displayname, b.users_id
+FROM Users b) g
+
+ON (f.userid=g.users_id)
+ORDER BY maxcount DESC LIMIT 10;
+
+/** OUTPUT**/
+
+Shadow_x99	244	758492
+Eric Labashosky	6522	634130
+Michael Haren	29	627289
+NotMyself	303	488467
+Grundlefleck	4120	481709
+cdv	3836	437095
+dmanxiii	4316	400319
+Polsonby	137	398535
+Antoine Aubry	2680	390016
+Peter Coulton	117	346050
+
+/********************************/
+
+8)
+SELECT title, displayname, maxcount 
+FROM
+(SELECT MAX(a.answercount) as maxcount, a.title as title, a.owneruserid as userid
+FROM Posts a
+GROUP BY a.owneruserid, a.title ORDER BY maxcount DESC) f
+JOIN
+(SELECT b.displayname, b.users_id
+FROM Users b) g
+ON (f.userid = g. users_id)
+ORDER BY maxcount DESC LIMIT 10;
+ 
+ /** OUTPUT**/
+ 
+ What non-programming books should programmers read?	Charles Roper	316
+Hidden Features of C#?	Serhat Özgel	296
+What is the single most influential book every programmer should read?	NotMyself	213
+Stack overflow code golf	Chris Jester-Young	131
+Factorial Algorithms in different languages	Brad Gilbert	129
+Recommended Fonts for Programming?	tbreffni	114
+What is your single most favorite command-line trick using Bash?	hoyhoy	105
+Practical non-image based CAPTCHA approaches?	Jeff Atwood	103
+Hidden Features of Java	grom	100
+Hidden Features of JavaScript?	Allain Lalonde	99
+
+/********************************/
+
+9)
+SELECT title, displayname, maxcount
+FROM
+(SELECT MAX(a.commentcount) as maxcount, a.title as title, a.owneruserid as owneruserid 
+FROM Posts a
+GROUP BY a.owneruserid, a.title) f
+JOIN
+(SELECT b.displayname, b.users_id
+FROM Users b) g
+ON f.owneruserid=g.users_id
+ORDER BY maxcount DESC LIMIT 10;
+
+ /** OUTPUT**/
+
+	Justin Standard	57
+	Konrad Rudolph	43
+	Scott Stanchfield	37
+	sectrean	35
+	Apocalisp	35
+What is the single most influential book every programmer should read?	NotMyself	35
+	Keith	34
+C#	Graham	34
+When setting a form's opacity should I use a decimal or double?	Eggs McLaren	34
+When creating a new GUI	Anheledir	34
+ 
+/********************************/
+
+10)
+SELECT COUNT(*) as cnt, a.location FROM Users a
+WHERE a.location IS NOT NULL AND a.location <>''
+GROUP BY a.location  ORDER BY cnt DESC LIMIT 1;
+
+
+
+*******************************************
+WHERE location IS NOT NULL AND location <>''
+
+
+/** OUTPUT**/
+
+20208	
+2452	United States
+1170	United Kingdom
+826	London United Kingdom
+497	San Francisco CA
+430	Seattle WA
+424	Australia
+412	New York NY
+405	Germany
+405	California
+
+
+/********************************/
+11)
+SELECT answercount, commentcount , postcount
+FROM 
+(SELECT a.users_id FROM Users a WHERE UPPER(a.location) LIKE '%INDIA') f
+JOIN
+(SELECT SUM(postcount) as postcount, SUM(answercount) as answercount, SUM(commentcount) as commentcount
+FROM
+(SELECT COUNT(*) as postcount, SUM(b.answercount) as answercount, SUM(b.commentcount) as commentcount, b.owneruserid as owneruserid
+FROM Posts b 
+GROUP BY b.owneruserid) g) h
+ON (f.users_id=g.owneruserid)
+
+************************************
+
+SELECT COUNT(*) as postcount, SUM(answercount) as answercount, SUM(commentcount) as commentcount
+FROM
+(SELECT a.location as location, b.answercount as answercount, b.commentcount as commentcount
+FROM Users a,Posts b 
+WHERE a.users_id=b.owneruserid ) f 
+WHERE UPPER(f.location) LIKE '%INDIA' ;
+
+***************************************
+
+SELECT a.users_id FROM Users a WHERE UPPER(a.location) LIKE '%INDIA'
+
+create table Ind(users_id int, reputation int, displayname string, location string, age int)
+row format delimited 
+fields terminated by ',' ;
+
+
+load data local inpath '/Users/poojashantharaja/Desktop/ind' into table Ind ;
+
+
+/** OUTPUT**/
+
+558	1370	 350
+
+*************************
+
