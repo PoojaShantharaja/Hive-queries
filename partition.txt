@@ -1,0 +1,22 @@
+create table txnrecords(txn_num INT, txn_date string, cust_num int, amount double, category String, product string, city string, state string, spendby string)
+row format delimited
+fields terminated by ',' 
+stored as textfile;
+
+load data LOCAL inpath '/Users/poojashantharaja/Documents/Hadoop/Hadoop_Assignments/Module8/Advance Hive Codes/txns1.txt' into table txnrecords;
+
+create table txn_part(txn_num INT, txn_date string, cust_num int, amount double, product string, city string, state string, spendby string)
+partitioned by (category string)
+clustered by(state) into 10 buckets
+row format delimited
+fields terminated by ',' 
+stored as textfile;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+set hive.enforce.bucketing=true;
+
+from txnrecords t INSERT OVERWRITE table txn_part PARTITION(category)
+select t.txn_num, t.txn_date, t.cust_num, t.amount, t.product, t.city, t.state, t.spendby, t.category; 
+
+select * from txn_part TABLESAMPLE(BUCKET 3 OUT of 10 on state);
